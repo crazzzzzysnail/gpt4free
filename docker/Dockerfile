@@ -19,7 +19,7 @@ RUN if [ "$G4F_VERSION" = "" ] ; then \
 RUN apt-get -qqy update \
   && apt-get -qqy upgrade \
   && apt-get -qyy autoremove \
-  && apt-get -qqy install --no-install-recommends gosu python3 python-is-python3 pip ffmpeg flac libavcodec-extra \
+  && apt-get -qqy install python3 python-is-python3 pip ffmpeg flac libavcodec-extra \
   && apt-get -qyy remove openjdk-11-jre-headless \
   && apt-get -qyy autoremove \
   && apt-get -qyy clean \
@@ -35,13 +35,8 @@ COPY docker/background.png /usr/share/images/fluxbox/ubuntu-light.png
 # Add user, fix permissions
 RUN chown "${SEL_UID}:${SEL_GID}" $HOME/.local
 
-# Copy and set up entrypoint
-COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-
-# The container will start as root, and the entrypoint will handle user switching.
-# USER $SEL_UID
+# Switch user
+USER $SEL_UID
 
 # Set the working directory in the container.
 WORKDIR $G4F_DIR
@@ -57,5 +52,3 @@ ADD --chown=$SEL_UID:$SEL_GID g4f $G4F_DIR/g4f
 
 # Expose ports
 EXPOSE 8080 7900
-
-CMD ["python", "-m", "g4f.api.run", "--port", "8080", "--host", "0.0.0.0"]
