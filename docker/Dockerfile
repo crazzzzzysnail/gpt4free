@@ -40,8 +40,8 @@ COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
-# Switch user
-USER $SEL_UID
+# The container will start as root, and the entrypoint will handle user switching.
+# USER $SEL_UID
 
 # Set the working directory in the container.
 WORKDIR $G4F_DIR
