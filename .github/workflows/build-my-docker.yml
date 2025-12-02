@@ -1,0 +1,67 @@
+# .github/workflows/build-my-docker.yml
+# 这个 GitHub Actions 工作流用于自动构建 Docker 镜像并将其推送到 GitHub Container Registry (GHCR)。
+name: Build and Push Docker Image to GHCR
+
+on:
+  push:
+    # 当代码被推送到 main 分支时触发
+    branches:
+      - 'main'
+    # 当一个符合 'v*.*.*' 格式的 Git 标签被推送时触发 (例如 v1.0.0)
+    tags:
+      - 'v*.*.*'
+  # 允许手动触发此工作流
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    # 授予 job 写入 package 的权限
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        # 检出您的代码
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        # 登录到 GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          # GITHUB_TOKEN 是由 GitHub Actions 自动提供的，具有推送包到当前仓库的权限
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        # 提取元数据，如镜像标签和名称
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          # 使用 ghcr.io/YOUR_USERNAME/YOUR_REPONAME 作为镜像名
+          # 为镜像定义标签生成规则
+          tags: |
+            # 当您推送一个名为 'v1.2.3' 的 Git 标签时，会自动生成镜像标签。
+            type=semver,pattern={{version}}
+
+            # 当代码被推送到默认分支 (通常是 'main') 时，为镜像打上 'latest' 标签。
+            # 手动触发工作流时，如果选择在 main 分支上运行，此规则同样生效。
+            type=raw,value=latest,enable={{is_default_branch}}
+
+            # 为每次构建生成一个唯一的 SHA 标签。
+            type=sha,prefix=
+
+      - name: Build and push Docker image
+        # 构建并推送镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          # 使用项目根目录下的 Dockerfile
+          file: ./docker/Dockerfile
+          push: true
+          # 使用上一步 (meta) 生成的所有标签
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

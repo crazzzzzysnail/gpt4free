@@ -18,3 +18,6 @@ python-multipart
 a2wsgi
 python-dotenv
 ddgs
+
+# 添加 nodriver 依赖以解决 MissingRequirementsError
+nodriver
